@@ -49,7 +49,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("Resultado do Supabase:", { foundUser, error });
 
       if (error) {
-        console.error("Erro ao buscar usuário:", error);
+       console.error("Erro ao buscar usuário:", JSON.stringify(error, null, 2));
+;
         return false;
       }
 
