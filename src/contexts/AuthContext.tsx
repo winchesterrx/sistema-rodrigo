@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { supabase } from "../integrations/supabase/client";
 
@@ -36,85 +35,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
- const login = async (cpf: string, password: string): Promise<boolean> => {
-  const formattedCPF = cpf.replace(/\D/g, '');
-  console.log("Tentando login com:", { formattedCPF, password });
+  const login = async (cpf: string, password: string): Promise<boolean> => {
+    const formattedCPF = cpf.replace(/\D/g, '');
+    console.log("Tentando login com:", { formattedCPF, password });
 
-  try {
-    const { data: foundUser, error } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('cpf', formattedCPF)
-      .single();
-
-    console.log("Resultado do Supabase:", { foundUser, error });
-
-    if (error) {
-      console.error("Erro ao buscar usuário:", error);
-      return false;
-    }
-
-    if (!foundUser) {
-      console.warn("Usuário não encontrado com CPF:", formattedCPF);
-      return false;
-    }
-
-    if (foundUser.senha !== password) {
-      console.warn("Senha incorreta. Digitada:", password, "Esperada:", foundUser.senha);
-      return false;
-    }
-
-    const userData = { 
-      name: foundUser.nome, 
-      cpf: foundUser.cpf,
-      isAdmin: foundUser.is_admin,
-      permissions: foundUser.permissions 
-    };
-
-    setIsAuthenticated(true);
-    setUser(userData);
-    localStorage.setItem('currentUser', JSON.stringify(userData));
-    return true;
-
-  } catch (error) {
-    console.error("Erro no login:", error);
-    return false;
-  }
-};
-
-    
     try {
-      // Query the Supabase usuarios table for the user with this CPF
       const { data: foundUser, error } = await supabase
         .from('usuarios')
         .select('*')
         .eq('cpf', formattedCPF)
         .single();
-      
-      console.log("Login attempt:", { formattedCPF, password });
-      console.log("Found user:", foundUser);
-      
+
+      console.log("Resultado do Supabase:", { foundUser, error });
+
       if (error) {
-        console.error("Error fetching user:", error);
+        console.error("Erro ao buscar usuário:", error);
         return false;
       }
-      
-      if (foundUser && foundUser.senha === password) {
-        setIsAuthenticated(true);
-        const userData = { 
-          name: foundUser.nome, 
-          cpf: foundUser.cpf,
-          isAdmin: foundUser.is_admin,
-          permissions: foundUser.permissions 
-        };
-        setUser(userData);
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        return true;
+
+      if (!foundUser) {
+        console.warn("Usuário não encontrado com CPF:", formattedCPF);
+        return false;
       }
-      
-      return false;
+
+      if (foundUser.senha !== password) {
+        console.warn("Senha incorreta. Digitada:", password, "Esperada:", foundUser.senha);
+        return false;
+      }
+
+      const userData = { 
+        name: foundUser.nome, 
+        cpf: foundUser.cpf,
+        isAdmin: foundUser.is_admin,
+        permissions: foundUser.permissions 
+      };
+
+      setIsAuthenticated(true);
+      setUser(userData);
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      return true;
+
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Erro no login:", error);
       return false;
     }
   };
@@ -128,17 +90,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkPermission = (permission: string): boolean => {
     if (!user) return false;
     if (user.isAdmin) return true;
-    
-    // Permissões especiais para o usuário com CPF 222.511.938-47
+
     if (user.cpf.replace(/\D/g, '') === '22251193847') {
       if (!user.permissions) return false;
-      
-      // Verifica se o usuário tem as permissões de usuário ou todas as permissões
-      if (permission === 'create' || permission === 'edit' || permission === 'delete' || permission === 'view') {
+      if (["create", "edit", "delete", "view"].includes(permission)) {
         return user.permissions.includes(permission) || user.permissions.includes("all");
       }
     }
-    
+
     if (!user.permissions) return false;
     return user.permissions.includes(permission) || user.permissions.includes("all");
   };
