@@ -36,9 +36,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const login = async (cpf: string, password: string): Promise<boolean> => {
-    // Format CPF to remove any non-numeric characters
-    const formattedCPF = cpf.replace(/\D/g, '');
+ const login = async (cpf: string, password: string): Promise<boolean> => {
+  const formattedCPF = cpf.replace(/\D/g, '');
+  console.log("Tentando login com:", { formattedCPF, password });
+
+  try {
+    const { data: foundUser, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('cpf', formattedCPF)
+      .single();
+
+    console.log("Resultado do Supabase:", { foundUser, error });
+
+    if (error) {
+      console.error("Erro ao buscar usuário:", error);
+      return false;
+    }
+
+    if (!foundUser) {
+      console.warn("Usuário não encontrado com CPF:", formattedCPF);
+      return false;
+    }
+
+    if (foundUser.senha !== password) {
+      console.warn("Senha incorreta. Digitada:", password, "Esperada:", foundUser.senha);
+      return false;
+    }
+
+    const userData = { 
+      name: foundUser.nome, 
+      cpf: foundUser.cpf,
+      isAdmin: foundUser.is_admin,
+      permissions: foundUser.permissions 
+    };
+
+    setIsAuthenticated(true);
+    setUser(userData);
+    localStorage.setItem('currentUser', JSON.stringify(userData));
+    return true;
+
+  } catch (error) {
+    console.error("Erro no login:", error);
+    return false;
+  }
+};
+
     
     try {
       // Query the Supabase usuarios table for the user with this CPF
